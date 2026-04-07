@@ -23,15 +23,8 @@ class ClusterNetTrainer:
             pl.utilities.seed.seed_everything(self.args.seed)
 
     def fit(self, train_loader, val_loader, logger, n_epochs, centers=None):
-        from pytorch_lightning.loggers import NeptuneLogger
+        from pytorch_lightning.loggers import TensorBoardLogger
         from pytorch_lightning.loggers.base import DummyLogger
-        
-        if isinstance(logger, NeptuneLogger):
-            if logger.api_key == 'your_API_token':
-                print("No Neptune API token defined!")
-                print("Please define Neptune API token or run with the --offline argument.")
-                print("Running without logging...")
-                logger = DummyLogger()
         
         cluster_trainer = pl.Trainer(
             logger=logger, max_epochs=n_epochs, gpus=self.args.gpus, num_sanity_val_steps=0, checkpoint_callback=False,

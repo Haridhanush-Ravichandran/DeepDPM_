@@ -7,7 +7,7 @@
 import argparse
 from argparse import ArgumentParser
 import os
-from pytorch_lightning.loggers.neptune import NeptuneLogger
+from pytorch_lightning.loggers import TensorBoardLogger
 from pytorch_lightning.loggers.base import DummyLogger
 import pytorch_lightning as pl
 from sklearn.metrics import normalized_mutual_info_score as NMI
@@ -393,22 +393,12 @@ def train_cluster_net():
     if args.offline:
         logger = DummyLogger()
     else:
-        logger = NeptuneLogger(
-                api_key='your_API_token',
-                project_name='your_project_name',
-                experiment_name=args.exp_name,
-                params=vars(args),
-                tags=tags
-            )
+        logger = TensorBoardLogger(
+            save_dir="logs",
+            name=args.exp_name)
 
     check_args(args, dataset_obj.data_dim)
 
-    if isinstance(logger, NeptuneLogger):
-        if logger.api_key == 'your_API_token':
-            print("No Neptune API token defined!")
-            print("Please define Neptune API token or run with the --offline argument.")
-            print("Running without logging...")
-            logger = DummyLogger()
 
     # Main body
     if args.seed:
@@ -430,7 +420,7 @@ def train_cluster_net():
     print("Finished training!")
     # evaluate last model
     dataset = dataset_obj.get_train_data()
-    data = dataset.data
+    data = dataset.tensors[0]
     net_pred = model(data).argmax(axis=1).cpu().numpy()
     if args.use_labels_for_eval:
         # evaluate model using labels

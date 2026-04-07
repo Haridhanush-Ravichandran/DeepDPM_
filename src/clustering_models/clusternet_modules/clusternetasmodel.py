@@ -199,8 +199,14 @@ class ClusterNetModel(pl.LightningModule):
             "cluster_net_train/train/cluster_loss",
             self.hparams.cluster_loss_weight * cluster_loss,
             on_step=True,
-            on_epoch=False,
+            on_epoch=True,
         )
+        self.logger.experiment.add_scalar(
+        "train_exp_K_epoch",
+        self.K,
+        self.current_epoch)
+        self.log("cluster_net_train/train/Num_of_Clusters",self.K,on_step=False,
+            on_epoch=True,)
         loss = self.hparams.cluster_loss_weight * cluster_loss
 
         if not self.hparams.ignore_subclusters and optimizer_idx == self.optimizers_dict_idx["subcluster_net_opt"]:
@@ -271,7 +277,7 @@ class ClusterNetModel(pl.LightningModule):
 
         if self.current_training_stage != "gather_codes":
             cluster_loss = self.training_utils.cluster_loss_function(
-                codes.view(-1, self.codes_dim),
+                codes.view(-1, self.codes_dism),
                 logits,
                 model_mus=self.mus,
                 K=self.K,
@@ -283,6 +289,7 @@ class ClusterNetModel(pl.LightningModule):
             )
             loss = self.hparams.cluster_loss_weight * cluster_loss
             self.log("cluster_net_train/val/cluster_loss", loss)
+            
 
             if self.current_epoch >= self.hparams.start_sub_clustering and not self.hparams.ignore_subclusters:
                 subclusters = self.subcluster(codes, logits)
