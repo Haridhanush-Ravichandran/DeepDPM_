@@ -55,7 +55,7 @@ class PlotUtils:
                 plt.title(f"{method} embeddings, epoch {current_epoch}")
                 from pytorch_lightning.loggers.base import DummyLogger
                 if not isinstance(self.logger, DummyLogger):
-                    logger.log_image(f"{stage}/{training_stage}/{method} embeddings using net labels", fig)
+                    logger.experiment.add_figure(f"{stage}/{training_stage}/{method} embeddings using net labels", fig, global_step=0)
                 plt.close(fig)
 
             else:
@@ -71,7 +71,7 @@ class PlotUtils:
                 ax.axes.yaxis.set_ticks([])
                 from pytorch_lightning.loggers.base import DummyLogger
                 if not isinstance(self.logger, DummyLogger):
-                    logger.log_image(f"{stage}/{training_stage}/{method} embeddings using net labels new", fig)
+                    logger.experiment.add_figure(f"{stage}/{training_stage}/{method} embeddings using net labels new", fig, global_step=0)
                 plt.close(fig)
 
         if y_hat is not None:
@@ -81,7 +81,7 @@ class PlotUtils:
 
             from pytorch_lightning.loggers.base import DummyLogger
             if not isinstance(self.logger, DummyLogger):
-                logger.log_image(f"{stage}/{training_stage}/{method} embeddings using net pseudo-labels", fig)
+                logger.experiment.add_figure(f"{stage}/{training_stage}/{method} embeddings using net pseudo-labels", fig, global_step=0)
             plt.close(fig)
 
         fig = plt.figure(figsize=(16, 10))
@@ -99,9 +99,9 @@ class PlotUtils:
         from pytorch_lightning.loggers.base import DummyLogger
         if not isinstance(logger, DummyLogger):
             if EM_labels is None:
-                logger.log_image(f"{stage}/{training_stage}/{method} embeddings using true labels", fig)
+                logger.experiment.add_figure(f"{stage}/{training_stage}/{method} embeddings using true labels", fig, global_step=0)
             else:
-                logger.log_image(f"{stage}/{training_stage}/{method} embeddings using EM labels", fig)
+                logger.experiment.add_figure(f"{stage}/{training_stage}/{method} embeddings using EM labels", fig, global_step=0)
         plt.close(fig)
 
     def visualize_embeddings_old(data, labels, use_pca_first=False):
@@ -417,7 +417,7 @@ class PlotUtils:
             plt.title(f"the eigenvalues of cov {i} to be split, epoch {epoch}")
             plt.xlabel("Eigenvalues inds")
             plt.ylabel("Eigenvalues")
-            self.logger.log_image(f"cluster_net_train/train/epoch {epoch}/eigenvalues_cov_{i}", fig)
+            self.logger.experiment.add_figure(f"cluster_net_train/train/epoch {epoch}/eigenvalues_cov_{i}", fig, global_step=0)
             plt.close(fig)
 
     def update_colors(self, split, split_inds, merge_inds):

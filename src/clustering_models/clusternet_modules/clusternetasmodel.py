@@ -277,7 +277,7 @@ class ClusterNetModel(pl.LightningModule):
 
         if self.current_training_stage != "gather_codes":
             cluster_loss = self.training_utils.cluster_loss_function(
-                codes.view(-1, self.codes_dism),
+                codes.view(-1, self.codes_dim),
                 logits,
                 model_mus=self.mus,
                 K=self.K,
@@ -845,7 +845,7 @@ class ClusterNetModel(pl.LightningModule):
                 plt.title(f"Epoch {self.current_epoch}: cluster {k}")
                 plt.legend()
 
-                # self.logger.log_image(f"cluster_net_train/val/logits_reaction_fig_cluster_{k}", fig)
+                # self.logger.experiment.add_figure(f"cluster_net_train/val/logits_reaction_fig_cluster_{k}", fig, self.current_epoch)
                 plt.close(fig)
 
     def plot_histograms(self, train=True, for_thesis=False):
@@ -876,7 +876,7 @@ class ClusterNetModel(pl.LightningModule):
 
         from pytorch_lightning.loggers.base import DummyLogger
         if not isinstance(self.logger, DummyLogger):
-            self.logger.log_image(f"cluster_net_train/{stage}/clusters_weights_fig", fig)
+            self.logger.experiment.add_figure(f"cluster_net_train/{stage}/clusters_weights_fig", fig, self.current_epoch)
         plt.close(fig)
 
     def plot_clusters_high_dim(self, stage="train"):
@@ -902,14 +902,14 @@ class ClusterNetModel(pl.LightningModule):
             K=len(torch.unique(gt[stage])),
         )
         plt.close(fig)
-        self.logger.log_image(f"cluster_net_train/{stage}/clusters_fig_gt_labels", fig)
+        self.logger.experiment.add_figure(f"cluster_net_train/{stage}/clusters_fig_gt_labels", fig, self.current_epoch)
         fig = self.plot_utils.plot_clusters_colored_by_net(
             samples=self.codes,
             y_net=cluster_net_labels,
             n_epoch=self.current_epoch,
             K=len(torch.unique(cluster_net_labels)),
         )
-        self.logger.log_image("cluster_net_train/train/clusters_fig_net_labels", fig)
+        self.logger.experiment.add_figure("cluster_net_train/train/clusters_fig_net_labels", fig, self.current_epoch)
         plt.close(fig)
 
     def log_clustering_metrics(self, stage="train"):

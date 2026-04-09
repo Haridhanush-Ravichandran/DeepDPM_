@@ -8,7 +8,7 @@ import os
 import torch
 import argparse
 import pytorch_lightning as pl
-from pytorch_lightning.loggers import NeptuneLogger
+from pytorch_lightning.loggers import TensorBoardLogger
 from pytorch_lightning.loggers.base import DummyLogger
 import numpy as np
 
@@ -107,13 +107,13 @@ def parse_args():
     parser.add_argument(
         "--max_epochs",
         type=int,
-        default=300,
+        default=100,
         help="number of AE epochs",
     )
     parser.add_argument(
         "--number_of_ae_alternations",
         type=int,
-        default=3,
+        default=2,
         help="The number of DeepDPM AE alternations to perform"
     )
     parser.add_argument(
@@ -174,21 +174,12 @@ def train_clusternet_with_alternations():
     if args.offline:
         logger = DummyLogger()
     else:
-        logger = NeptuneLogger(
-                api_key='your_API_token',
-                project_name='your_project_name',
-                experiment_name=args.tag,
-                params=vars(args),
-                tags=tags
-            )
+        logger = TensorBoardLogger(
+            save_dir="logs",
+            name=args.exp_name)
+
     
     device = "cuda" if torch.cuda.is_available() and args.gpus is not None else "cpu"
-    if isinstance(logger, NeptuneLogger):
-        if logger.api_key == 'your_API_token':
-            print("No Neptune API token defined!")
-            print("Please define Neptune API token or run with the --offline argument.")
-            print("Running without logging...")
-            logger = DummyLogger()
 
     # Main body
     model = AE_ClusterPipeline(args=args, logger=logger, input_dim=data.data_dim)
