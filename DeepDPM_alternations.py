@@ -39,7 +39,7 @@ def parse_args():
         "--batch-size", type=int, default=128, help="input batch size for training"
     )
     parser.add_argument(
-        "--epoch", type=int, default=100, help="number of epochs to train"
+        "--epoch", type=int, default=300, help="number of epochs to train"
     )
     parser.add_argument(
         "--pretrain_epochs", type=int, default=0, help="number of pre-train epochs"
@@ -75,7 +75,7 @@ def parse_args():
     parser.add_argument(
         "--log-interval",
         type=int,
-        default=400,
+        default=300,
         help="how many batches to wait before logging the training status",
     )
     parser.add_argument(
