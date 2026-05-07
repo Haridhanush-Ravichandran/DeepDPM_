@@ -3,22 +3,79 @@
 #
 # Copyright (c) 2022 Meitar Ronen
 #
-
 import argparse
 from argparse import ArgumentParser
 import os
-from pytorch_lightning.loggers.neptune import NeptuneLogger
+from pytorch_lightning.loggers import TensorBoardLogger
 from pytorch_lightning.loggers.base import DummyLogger
 import pytorch_lightning as pl
 from sklearn.metrics import normalized_mutual_info_score as NMI
 from sklearn.metrics import adjusted_rand_score as ARI
+from sklearn.metrics import confusion_matrix
 import numpy as np
-
+import matplotlib.pyplot as plt
+import seaborn as sns
+ 
 from src.datasets import CustomDataset
 from src.datasets import GMM_dataset
 from src.clustering_models.clusternet_modules.clusternetasmodel import ClusterNetModel
 from src.utils import check_args, cluster_acc
 
+
+def plot_confusion_matrix(labels, net_pred, exp_name, save_dir="logs"):
+    """
+    Compute and plot the confusion matrix between true labels and cluster predictions.
+    Rows = true classes, columns = predicted clusters.
+    The matrix is normalized by row (i.e. shows recall per class).
+    """
+    cm = confusion_matrix(labels, net_pred)
+    # Normalize by row (true label totals) for readability
+    cm_normalized = cm.astype(float) / cm.sum(axis=1, keepdims=True)
+ 
+    n_true = cm.shape[0]
+    n_pred = cm.shape[1]
+ 
+    fig, axes = plt.subplots(1, 2, figsize=(max(10, n_pred), max(4, n_true // 2 + 2)))
+ 
+    # Raw counts
+    sns.heatmap(
+        cm,
+        annot=True,
+        fmt="d",
+        cmap="Blues",
+        ax=axes[0],
+        xticklabels=[f"C{i}" for i in range(n_pred)],
+        yticklabels=[f"L{i}" for i in range(n_true)],
+    )
+    axes[0].set_title("Confusion Matrix (counts)")
+    axes[0].set_xlabel("Predicted Cluster")
+    axes[0].set_ylabel("True Label")
+ 
+    # Normalized
+    sns.heatmap(
+        cm_normalized,
+        annot=True,
+        fmt=".2f",
+        cmap="Blues",
+        ax=axes[1],
+        xticklabels=[f"C{i}" for i in range(n_pred)],
+        yticklabels=[f"L{i}" for i in range(n_true)],
+        vmin=0,
+        vmax=1,
+    )
+    axes[1].set_title("Confusion Matrix (row-normalized)")
+    axes[1].set_xlabel("Predicted Cluster")
+    axes[1].set_ylabel("True Label")
+ 
+    plt.suptitle(f"Experiment: {exp_name}", fontsize=13, y=1.01)
+    plt.tight_layout()
+ 
+    os.makedirs(save_dir, exist_ok=True)
+    save_path = os.path.join(save_dir, f"{exp_name}_confusion_matrix.png")
+    plt.savefig(save_path, bbox_inches="tight", dpi=150)
+    plt.close()
+    print(f"Confusion matrix saved to: {save_path}")
+    return cm
 
 def parse_minimal_args(parser):
     # Dataset parameters
@@ -393,22 +450,12 @@ def train_cluster_net():
     if args.offline:
         logger = DummyLogger()
     else:
-        logger = NeptuneLogger(
-                api_key='your_API_token',
-                project_name='your_project_name',
-                experiment_name=args.exp_name,
-                params=vars(args),
-                tags=tags
-            )
+        logger = TensorBoardLogger(
+            save_dir="logs",
+            name=args.exp_name)
 
     check_args(args, dataset_obj.data_dim)
 
-    if isinstance(logger, NeptuneLogger):
-        if logger.api_key == 'your_API_token':
-            print("No Neptune API token defined!")
-            print("Please define Neptune API token or run with the --offline argument.")
-            print("Running without logging...")
-            logger = DummyLogger()
 
     # Main body
     if args.seed:
@@ -438,7 +485,23 @@ def train_cluster_net():
         acc = np.round(cluster_acc(labels, net_pred), 5)
         nmi = np.round(NMI(net_pred, labels), 5)
         ari = np.round(ARI(net_pred, labels), 5)
+        unique, counts = np.unique(net_pred, return_counts=True)
 
+        for cls, cnt in zip(unique, counts):
+            print(f"Class {cls}: {cnt}")
+        unique, counts = np.unique(labels, return_counts=True)
+
+        for cls, cnt in zip(unique, counts):
+            print(f"Class {cls}: {cnt}")
+        
+        cm = plot_confusion_matrix(
+            labels=labels,
+            net_pred=net_pred,
+            exp_name=args.exp_name,
+            save_dir=f"logs/{args.exp_name}",
+        )
+        print("Confusion matrix (counts):")
+        print(cm)
         print(f"NMI: {nmi}, ARI: {ari}, acc: {acc}, final K: {len(np.unique(net_pred))}")
     
     return net_pred

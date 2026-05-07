@@ -13,7 +13,7 @@ from torch import optim
 import pytorch_lightning as pl
 from sklearn.metrics.cluster import normalized_mutual_info_score
 from sklearn.metrics import adjusted_rand_score, silhouette_score, adjusted_mutual_info_score, homogeneity_completeness_v_measure
-
+import torch.nn.functional as F
 from src.clustering_models.clusternet_modules.utils.plotting_utils import PlotUtils
 from src.clustering_models.clusternet_modules.utils.training_utils import training_utils
 from src.clustering_models.clusternet_modules.utils.clustering_utils.priors import (
@@ -869,8 +869,9 @@ class ClusterNetModel(pl.LightningModule):
 
         from pytorch_lightning.loggers.base import DummyLogger
         if not isinstance(self.logger, DummyLogger):
-            self.logger.log_image(f"cluster_net_train/{stage}/clusters_weights_fig", fig)
-        plt.close(fig)
+            self.logger.experiment.add_figure(f"cluster_net_train/{stage}/clusters_weights_fig", fig, global_step=self.current_epoch)
+
+
 
     def plot_clusters_high_dim(self, stage="train"):
         resps = {
